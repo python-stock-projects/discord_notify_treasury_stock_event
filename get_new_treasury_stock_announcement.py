@@ -3,6 +3,8 @@
 '''
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import json
 from datetime import datetime, timedelta, timezone
 
@@ -20,8 +22,25 @@ def get_sii_announcement():
     announcement_body =  f'step=00&RADIO_CM=1&TYPEK=sii&CO_MARKET=&CO_ID=&PRO_ITEM=&SUBJECT=%E8%B2%B7%E5%9B%9E&SDATE={today}&EDATE=&lang=TW&AN='
     #announcement_body =  f'step=00&RADIO_CM=1&TYPEK=sii&CO_MARKET=&CO_ID=&PRO_ITEM=&SUBJECT=%E7%8F%BE%E9%87%91%E5%A2%9E%E8%B3%87&SDATE=20241121&EDATE=&lang=TW&AN='
 
+    # 建立有 retry 的 session
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=2,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["POST"]
+    )
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    try:
+        response = session.post(announcement_url, data=announcement_body, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"連線失敗：{e}")
+        return {"data": [], "message": [f"連線失敗：{e}"], "status": "fail"}
+    
     # 取得公告資訊
-    response = requests.post(announcement_url, data=announcement_body)
+    # response = requests.post(announcement_url, data=announcement_body)
 
     if response.status_code == 200:
         # 移除 UTF-8 BOM
@@ -74,9 +93,25 @@ def get_otc_announcement():
     announcement_body =  f'step=00&RADIO_CM=1&TYPEK=otc&CO_MARKET=&CO_ID=&PRO_ITEM=&SUBJECT=%E8%B2%B7%E5%9B%9E&SDATE={today}&EDATE=&lang=TW&AN='
     #announcement_body =  f'step=00&RADIO_CM=1&TYPEK=otc&CO_MARKET=&CO_ID=&PRO_ITEM=&SUBJECT=%E7%8F%BE%E9%87%91%E5%A2%9E%E8%B3%87&SDATE=20241121&EDATE=&lang=TW&AN='
 
+    # 建立有 retry 的 session
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=2,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["POST"]
+    )
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    try:
+        response = session.post(announcement_url, data=announcement_body, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"連線失敗：{e}")
+        return {"data": [], "message": [f"連線失敗：{e}"], "status": "fail"}
+    
     # 取得公告資訊
-    response = requests.post(announcement_url, data=announcement_body)
-  
+    # response = requests.post(announcement_url, data=announcement_body)
 
     if response.status_code == 200:
         # 移除 UTF-8 BOM
